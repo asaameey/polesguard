@@ -1,0 +1,60 @@
+'use client'
+
+import Link from 'next/link'
+import { signOut } from '@/lib/auth-client'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+
+interface DashboardHeaderProps {
+  user: {
+    id: string
+    name?: string | null
+    email: string
+  }
+}
+
+export default function DashboardHeader({ user }: DashboardHeaderProps) {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    await signOut()
+    router.push('/sign-in')
+  }
+
+  return (
+    <header className="border-b border-border bg-card">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+            <span className="font-bold text-primary-foreground">PD</span>
+          </div>
+          <h1 className="text-xl font-bold text-foreground">Pole Defect Monitor</h1>
+        </div>
+
+        <nav className="flex items-center gap-6">
+          <Link href="/dashboard" className="text-sm font-medium text-foreground hover:text-primary">
+            Dashboard
+          </Link>
+          <Link href="/devices" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            Devices
+          </Link>
+          <Link href="/settings" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            Settings
+          </Link>
+
+          <div className="flex items-center gap-3 border-l border-border pl-6">
+            <span className="text-sm text-muted-foreground">{user.email}</span>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+            >
+              Logout
+            </Button>
+          </div>
+        </nav>
+      </div>
+    </header>
+  )
+}
