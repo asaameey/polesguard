@@ -4,8 +4,8 @@ import './globals.css'
 import { ErrorHandlerClient } from '@/components/error-handler-client'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'Poles Guard - Pole Defect Detection',
+  description: 'Monitor and detect defects in electrical poles with advanced defect detection technology',
   generator: 'v0.app',
   icons: {
     icon: [
