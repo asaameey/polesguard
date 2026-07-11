@@ -17,7 +17,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     // Development origins
     ...(process.env.NODE_ENV === 'development'
-      ? ['http://localhost:3000', 'http://localhost:3001']
+      ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost', 'http://127.0.0.1']
       : []),
     // V0 runtime URL
     ...(process.env.V0_RUNTIME_URL ? [process.env.V0_RUNTIME_URL] : []),
