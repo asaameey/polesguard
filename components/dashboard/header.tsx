@@ -18,7 +18,7 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
 
   const handleLogout = async () => {
     await signOut()
-    router.push('/sign-in')
+    router.push('/dashboard')
   }
 
   return (

@@ -13,10 +13,6 @@ export const metadata = {
 export default async function SettingsPage() {
   const session = await auth.api.getSession({ headers: await headers() })
 
-  if (!session?.user) {
-    redirect('/sign-in')
-  }
-
   try {
     const settings = await db
       .select()
