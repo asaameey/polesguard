@@ -35,6 +35,15 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
           <Link href="/dashboard" className="text-sm font-medium text-foreground hover:text-primary">
             Dashboard
           </Link>
+          <Link href="/map" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            Map
+          </Link>
+          <Link href="/sensors" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            Sensors
+          </Link>
+          <Link href="/alerts" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            Alerts
+          </Link>
           <Link href="/devices" className="text-sm font-medium text-muted-foreground hover:text-foreground">
             Devices
           </Link>
