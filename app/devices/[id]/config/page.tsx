@@ -22,10 +22,6 @@ export const metadata = {
 export default async function DeviceConfigPage({ params }: DeviceConfigPageProps) {
   const session = await auth.api.getSession({ headers: await headers() })
 
-  if (!session?.user) {
-    redirect('/sign-in')
-  }
-
   const deviceId = parseInt(params.id, 10)
   if (isNaN(deviceId)) {
     redirect('/devices')

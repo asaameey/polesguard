@@ -21,10 +21,6 @@ export const metadata = {
 export default async function PoleDetailPage({ params }: PoleDetailPageProps) {
   const session = await auth.api.getSession({ headers: await headers() })
 
-  if (!session?.user) {
-    redirect('/sign-in')
-  }
-
   const poleId = parseInt(params.id, 10)
   if (isNaN(poleId)) {
     redirect('/dashboard')

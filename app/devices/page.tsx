@@ -16,10 +16,6 @@ export const metadata = {
 export default async function DevicesPage() {
   const session = await auth.api.getSession({ headers: await headers() })
 
-  if (!session?.user) {
-    redirect('/sign-in')
-  }
-
   try {
     const devicesList = await db.select().from(devices).orderBy(devices.deviceName)
 

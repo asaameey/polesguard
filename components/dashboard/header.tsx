@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 
 interface DashboardHeaderProps {
-  user: {
+  user?: {
     id: string
     name?: string | null
     email: string
-  }
+  } | null
 }
 
 export default function DashboardHeader({ user }: DashboardHeaderProps) {
@@ -18,7 +18,7 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
 
   const handleLogout = async () => {
     await signOut()
-    router.push('/sign-in')
+    router.push('/dashboard')
   }
 
   return (
@@ -35,6 +35,15 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
           <Link href="/dashboard" className="text-sm font-medium text-foreground hover:text-primary">
             Dashboard
           </Link>
+          <Link href="/map" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            Map
+          </Link>
+          <Link href="/sensors" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            Sensors
+          </Link>
+          <Link href="/alerts" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            Alerts
+          </Link>
           <Link href="/devices" className="text-sm font-medium text-muted-foreground hover:text-foreground">
             Devices
           </Link>
@@ -42,17 +51,19 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
             Settings
           </Link>
 
-          <div className="flex items-center gap-3 border-l border-border pl-6">
-            <span className="text-sm text-muted-foreground">{user.email}</span>
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              size="sm"
-              className="text-xs"
-            >
-              Logout
-            </Button>
-          </div>
+          {user && (
+            <div className="flex items-center gap-3 border-l border-border pl-6">
+              <span className="text-sm text-muted-foreground">{user.email}</span>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                Logout
+              </Button>
+            </div>
+          )}
         </nav>
       </div>
     </header>

@@ -15,10 +15,6 @@ export const metadata = {
 export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() })
 
-  if (!session?.user) {
-    redirect('/sign-in')
-  }
-
   try {
     const [stats, poles, alerts] = await Promise.all([
       getSystemStats(),
@@ -28,7 +24,7 @@ export default async function DashboardPage() {
 
     return (
       <main className="min-h-screen bg-background">
-        <DashboardHeader user={session.user} />
+        <DashboardHeader user={session?.user ?? null} />
 
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           {/* System Statistics */}
@@ -53,7 +49,7 @@ export default async function DashboardPage() {
     console.error('[v0] Dashboard error:', error)
     return (
       <main className="min-h-screen bg-background">
-        <DashboardHeader user={session.user} />
+        <DashboardHeader user={session?.user ?? null} />
         <div className="mx-auto max-w-7xl px-4 py-8">
           <div className="rounded-lg border border-red-200 bg-red-50 p-4">
             <p className="text-sm text-red-800">
