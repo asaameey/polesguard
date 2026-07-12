@@ -1,5 +1,4 @@
-import { headers } from 'next/headers'
-import { auth } from '@/lib/auth'
+import { getHeaderUser } from '@/lib/supabase/user'
 import DashboardHeader from '@/components/dashboard/header'
 import PoleMapView from '@/components/map/pole-map-view'
 
@@ -9,11 +8,11 @@ export const metadata = {
 }
 
 export default async function MapPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const user = await getHeaderUser()
 
   return (
     <main className="min-h-screen bg-background">
-      <DashboardHeader user={session?.user} />
+      <DashboardHeader user={user} />
 
       <div className="h-[calc(100vh-80px)]">
         <PoleMapView />

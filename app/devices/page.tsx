@@ -1,7 +1,5 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { auth } from '@/lib/auth'
-import { headers } from 'next/headers'
 import { db } from '@/lib/db'
 import { devices, poles } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
@@ -14,8 +12,6 @@ export const metadata = {
 }
 
 export default async function DevicesPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
-
   try {
     const devicesList = await db.select().from(devices).orderBy(devices.deviceName)
 

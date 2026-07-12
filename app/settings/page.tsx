@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
-import { auth } from '@/lib/auth'
-import { headers } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
 import { operatorSettings } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
@@ -11,33 +10,20 @@ export const metadata = {
 }
 
 export default async function SettingsPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (!session?.user) {
-    return (
-      <main className="min-h-screen bg-background">
-        <div className="border-b border-border bg-card">
-          <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 lg:px-8">
-            <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-          </div>
-        </div>
-        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="rounded-lg border border-border bg-card p-6">
-            <p className="text-sm text-muted-foreground">
-              Notification preferences are tied to an operator account. No active session was
-              found, so per-operator settings are unavailable.
-            </p>
-          </div>
-        </div>
-      </main>
-    )
+  if (!user) {
+    redirect('/auth/login')
   }
 
   try {
     const settings = await db
       .select()
       .from(operatorSettings)
-      .where(eq(operatorSettings.userId, session.user.id))
+      .where(eq(operatorSettings.userId, user.id))
       .limit(1)
 
     return (
@@ -57,7 +43,7 @@ export default async function SettingsPage() {
           </div>
 
           <NotificationPreferencesForm
-            userId={session.user.id}
+            userId={user.id}
             existingSettings={settings[0] || null}
           />
         </div>

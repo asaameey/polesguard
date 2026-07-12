@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { signOut } from '@/lib/auth-client'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 
@@ -17,8 +17,9 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
   const router = useRouter()
 
   const handleLogout = async () => {
-    await signOut()
-    router.push('/dashboard')
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/auth/login')
   }
 
   return (
@@ -51,7 +52,7 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
             Settings
           </Link>
 
-          {user && (
+          {user ? (
             <div className="flex items-center gap-3 border-l border-border pl-6">
               <span className="text-sm text-muted-foreground">{user.email}</span>
               <Button
@@ -61,6 +62,12 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
                 className="text-xs"
               >
                 Logout
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 border-l border-border pl-6">
+              <Button asChild variant="outline" size="sm" className="text-xs">
+                <Link href="/auth/login">Sign in</Link>
               </Button>
             </div>
           )}

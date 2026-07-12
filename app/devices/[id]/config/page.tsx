@@ -1,7 +1,5 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { auth } from '@/lib/auth'
-import { headers } from 'next/headers'
 import { getDeviceThresholds } from '@/app/actions/monitoring'
 import { db } from '@/lib/db'
 import { devices } from '@/lib/db/schema'
@@ -20,8 +18,6 @@ export const metadata = {
 }
 
 export default async function DeviceConfigPage({ params }: DeviceConfigPageProps) {
-  const session = await auth.api.getSession({ headers: await headers() })
-
   const deviceId = parseInt(params.id, 10)
   if (isNaN(deviceId)) {
     redirect('/devices')

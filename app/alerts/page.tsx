@@ -1,5 +1,4 @@
-import { headers } from 'next/headers'
-import { auth } from '@/lib/auth'
+import { getHeaderUser } from '@/lib/supabase/user'
 import DashboardHeader from '@/components/dashboard/header'
 import AlertsCenter from '@/components/alerts/alerts-center'
 import IncidentReportForm from '@/components/alerts/incident-report-form'
@@ -10,11 +9,11 @@ export const metadata = {
 }
 
 export default async function AlertsPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const user = await getHeaderUser()
 
   return (
     <main className="min-h-screen bg-background">
-      <DashboardHeader user={session?.user} />
+      <DashboardHeader user={user} />
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">

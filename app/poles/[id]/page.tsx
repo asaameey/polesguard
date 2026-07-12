@@ -1,7 +1,5 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { auth } from '@/lib/auth'
-import { headers } from 'next/headers'
 import { getPoleWithDevices, getDefectHistory } from '@/app/actions/monitoring'
 import { ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -19,8 +17,6 @@ export const metadata = {
 }
 
 export default async function PoleDetailPage({ params }: PoleDetailPageProps) {
-  const session = await auth.api.getSession({ headers: await headers() })
-
   const poleId = parseInt(params.id, 10)
   if (isNaN(poleId)) {
     redirect('/dashboard')
