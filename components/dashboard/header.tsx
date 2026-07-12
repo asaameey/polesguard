@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 
 interface DashboardHeaderProps {
-  user: {
+  user?: {
     id: string
     name?: string | null
     email: string
-  }
+  } | null
 }
 
 export default function DashboardHeader({ user }: DashboardHeaderProps) {
@@ -51,17 +51,19 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
             Settings
           </Link>
 
-          <div className="flex items-center gap-3 border-l border-border pl-6">
-            <span className="text-sm text-muted-foreground">{user.email}</span>
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              size="sm"
-              className="text-xs"
-            >
-              Logout
-            </Button>
-          </div>
+          {user && (
+            <div className="flex items-center gap-3 border-l border-border pl-6">
+              <span className="text-sm text-muted-foreground">{user.email}</span>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                Logout
+              </Button>
+            </div>
+          )}
         </nav>
       </div>
     </header>
