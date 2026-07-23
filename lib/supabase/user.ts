@@ -5,16 +5,26 @@ import { createClient } from '@/lib/supabase/server'
  * or null when no one is signed in.
  */
 export async function getHeaderUser() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Return null if Supabase is not configured (development mode without integration)
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return null
+  }
 
-  if (!user) return null
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-  return {
-    id: user.id,
-    name: (user.user_metadata?.name as string | undefined) ?? null,
-    email: user.email ?? '',
+    if (!user) return null
+
+    return {
+      id: user.id,
+      name: (user.user_metadata?.name as string | undefined) ?? null,
+      email: user.email ?? '',
+    }
+  } catch {
+    // If Supabase is misconfigured, return null
+    return null
   }
 }

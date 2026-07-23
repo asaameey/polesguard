@@ -12,19 +12,24 @@ export const metadata = {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Allow development without Supabase configured
+  let headerUser = null
+  
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/auth/login')
-  }
+    if (!user) {
+      redirect('/auth/login')
+    }
 
-  const headerUser = {
-    id: user.id,
-    name: (user.user_metadata?.name as string | undefined) ?? null,
-    email: user.email ?? '',
+    headerUser = {
+      id: user.id,
+      name: (user.user_metadata?.name as string | undefined) ?? null,
+      email: user.email ?? '',
+    }
   }
 
   try {

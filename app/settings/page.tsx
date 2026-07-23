@@ -10,21 +10,32 @@ export const metadata = {
 }
 
 export default async function SettingsPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Allow development without Supabase configured
+  let userId: string | null = null
 
-  if (!user) {
-    redirect('/auth/login')
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      redirect('/auth/login')
+    }
+
+    userId = user.id
   }
 
   try {
-    const settings = await db
-      .select()
-      .from(operatorSettings)
-      .where(eq(operatorSettings.userId, user.id))
-      .limit(1)
+    let settings = []
+    
+    if (userId) {
+      settings = await db
+        .select()
+        .from(operatorSettings)
+        .where(eq(operatorSettings.userId, userId))
+        .limit(1)
+    }
 
     return (
       <main className="min-h-screen bg-background">
@@ -43,7 +54,7 @@ export default async function SettingsPage() {
           </div>
 
           <NotificationPreferencesForm
-            userId={user.id}
+            userId={userId || 'demo-user'}
             existingSettings={settings[0] || null}
           />
         </div>
