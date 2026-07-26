@@ -101,6 +101,17 @@ export const devices = pgTable('devices', {
   batteryLevel: integer('batteryLevel'),
   lastReadingAt: timestamp('lastReadingAt'),
   signalStrength: integer('signalStrength'),
+  // Hardware metadata
+  controllerType: text('controllerType'), // e.g., "Arduino", "STM32", "Raspberry Pi"
+  commType: text('commType'), // e.g., "LoRaWAN", "4G", "WiFi"
+  firmwareVersion: text('firmwareVersion'),
+  powerSource: text('powerSource'), // e.g., "Battery", "Solar", "AC"
+  // GPS Location from device
+  deviceLatitude: doublePrecision('deviceLatitude'),
+  deviceLongitude: doublePrecision('deviceLongitude'),
+  // Offline state
+  isOnline: boolean('isOnline').default(true),
+  lastOnlineAt: timestamp('lastOnlineAt'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
@@ -114,6 +125,11 @@ export const sensorThresholds = pgTable('sensor_thresholds', {
   normalBaseline: doublePrecision('normalBaseline'),
   anomalyDurationMinutes: integer('anomalyDurationMinutes').default(5),
   rapidFluctuationPercent: doublePrecision('rapidFluctuationPercent').default(15),
+  // Thresholds for new sensors
+  tiltThresholdDegrees: doublePrecision('tiltThresholdDegrees').default(15), // Alert if tilt > 15°
+  temperatureThresholdC: doublePrecision('temperatureThresholdC').default(75), // Alert if temp > 75°C
+  vibrationThreshold: doublePrecision('vibrationThreshold').default(2.5), // Alert if vibration > 2.5
+  voltageOutageThreshold: doublePrecision('voltageOutageThreshold').default(50), // Alert if voltage < 50V (for 230V base)
   enabled: boolean('enabled').default(true),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
@@ -124,6 +140,13 @@ export const currentReadings = pgTable('current_readings', {
   deviceId: integer('deviceId').notNull(),
   currentValue: doublePrecision('currentValue').notNull(),
   voltage: doublePrecision('voltage'),
+  // New sensor channels
+  temperature: doublePrecision('temperature'), // in Celsius
+  tiltAngle: doublePrecision('tiltAngle'), // in degrees
+  vibration: doublePrecision('vibration'), // vibration magnitude
+  // Device state
+  batteryVoltage: doublePrecision('batteryVoltage'),
+  signalStrength: integer('signalStrength'),
   timestamp: timestamp('timestamp').notNull().defaultNow(),
   anomalyDetected: boolean('anomalyDetected').default(false),
   anomalyType: text('anomalyType'),

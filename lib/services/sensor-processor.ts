@@ -9,27 +9,29 @@ import {
 } from './realtime'
 
 // Process incoming sensor data and detect anomalies
-export async function processSensorData(
-  deviceId: string,
-  currentValue: number,
-  voltage?: number
-) {
+export async function processSensorData(reading: SensorReading) {
   try {
     // Find device in database
     const device = await db.query.devices.findFirst({
-      where: eq(devices.deviceId, deviceId),
+      where: eq(devices.deviceId, reading.deviceId.toString()),
     })
 
     if (!device) {
-      console.error(`[v0] Device not found: ${deviceId}`)
+      console.error(`[v0] Device not found: ${reading.deviceId}`)
       return
     }
 
-    // Store current reading
-    const reading = await db.insert(currentReadings).values({
+    // Store current reading with all sensor channels
+    const storedReading = await db.insert(currentReadings).values({
       deviceId: device.id,
-      currentValue,
-      voltage: voltage || null,
+      currentValue: reading.currentValue,
+      voltage: reading.voltage || null,
+      temperature: reading.temperature || null,
+      tiltAngle: reading.tiltAngle || null,
+      vibration: reading.vibration || null,
+      batteryVoltage: reading.batteryVoltage || null,
+      signalStrength: reading.signalStrength || null,
+      timestamp: reading.timestamp || new Date(),
     }).returning()
 
     // Get sensor thresholds
@@ -46,52 +48,27 @@ export async function processSensorData(
 
     if (thresholds && thresholds.enabled) {
       // Check for high current
-      if (currentValue > thresholds.highCurrentThreshold) {
+      if (reading.currentValue > thresholds.highCurrentThreshold) {
         anomalyDetected = true
         anomalyType = 'high_current'
 
-        // Create defect record
         const defect = await db.insert(defects).values({
           deviceId: device.id,
           poleId: device.poleId,
           anomalyType: 'high_current',
-          severity: currentValue > thresholds.highCurrentThreshold * 1.5 ? 'high' : 'medium',
-          currentValue,
-          description: `High current detected: ${currentValue.toFixed(2)}A (threshold: ${thresholds.highCurrentThreshold}A)`,
+          severity: reading.currentValue > thresholds.highCurrentThreshold * 1.5 ? 'high' : 'medium',
+          currentValue: reading.currentValue,
+          description: `High current: ${reading.currentValue.toFixed(2)}A (threshold: ${thresholds.highCurrentThreshold}A)`,
         }).returning()
 
-        // Create alert
         if (defect.length > 0) {
-          await db.insert(alerts).values({
-            defectId: defect[0].id,
-            severity: defect[0].severity as 'low' | 'medium' | 'high',
-          })
-
-          // Broadcast alert
-          broadcastAlert({
-            id: defect[0].id,
-            severity: defect[0].severity as 'low' | 'medium' | 'high',
-            poleId: device.poleId,
-            deviceId: device.id,
-            message: `High current detected at Pole #${device.poleId}: ${currentValue.toFixed(2)}A`,
-            timestamp: new Date(),
-          })
-        }
-
-        // Update pole status
-        if (pole) {
-          await db.update(poles).set({ status: 'high' }).where(eq(poles.id, device.poleId))
-          broadcastPoleStatusChange({
-            poleId: device.poleId,
-            newStatus: 'high',
-            oldStatus: pole.status,
-            timestamp: new Date(),
-          })
+          await createAlert(defect[0], device, `High current at Pole #${device.poleId}`)
+          updatePoleStatus(device.poleId, pole, 'high')
         }
       }
 
       // Check for low current
-      if (currentValue < thresholds.lowCurrentThreshold) {
+      if (reading.currentValue < thresholds.lowCurrentThreshold) {
         anomalyDetected = true
         anomalyType = 'low_current'
 
@@ -100,24 +77,87 @@ export async function processSensorData(
           poleId: device.poleId,
           anomalyType: 'low_current',
           severity: 'medium',
-          currentValue,
-          description: `Low current detected: ${currentValue.toFixed(2)}A (threshold: ${thresholds.lowCurrentThreshold}A)`,
+          currentValue: reading.currentValue,
+          description: `Low current: ${reading.currentValue.toFixed(2)}A (threshold: ${thresholds.lowCurrentThreshold}A)`,
         }).returning()
 
         if (defect.length > 0) {
-          await db.insert(alerts).values({
-            defectId: defect[0].id,
-            severity: 'medium',
-          })
+          await createAlert(defect[0], device, `Low current at Pole #${device.poleId}`)
+        }
+      }
 
-          broadcastAlert({
-            id: defect[0].id,
-            severity: 'medium',
-            poleId: device.poleId,
-            deviceId: device.id,
-            message: `Low current detected at Pole #${device.poleId}: ${currentValue.toFixed(2)}A`,
-            timestamp: new Date(),
-          })
+      // Check for temperature anomaly
+      if (reading.temperature && thresholds.temperatureThresholdC && reading.temperature > thresholds.temperatureThresholdC) {
+        anomalyDetected = true
+        anomalyType = 'overheating'
+
+        const defect = await db.insert(defects).values({
+          deviceId: device.id,
+          poleId: device.poleId,
+          anomalyType: 'overheating',
+          severity: reading.temperature > (thresholds.temperatureThresholdC + 20) ? 'high' : 'medium',
+          description: `Temperature alert: ${reading.temperature.toFixed(1)}°C (threshold: ${thresholds.temperatureThresholdC}°C)`,
+        }).returning()
+
+        if (defect.length > 0) {
+          await createAlert(defect[0], device, `High temperature at Pole #${device.poleId}: ${reading.temperature.toFixed(1)}°C`)
+          updatePoleStatus(device.poleId, pole, 'warning')
+        }
+      }
+
+      // Check for tilt/structural damage
+      if (reading.tiltAngle && thresholds.tiltThresholdDegrees && reading.tiltAngle > thresholds.tiltThresholdDegrees) {
+        anomalyDetected = true
+        anomalyType = 'structural_damage'
+
+        const defect = await db.insert(defects).values({
+          deviceId: device.id,
+          poleId: device.poleId,
+          anomalyType: 'structural_damage',
+          severity: reading.tiltAngle > 30 ? 'high' : 'medium',
+          description: `Tilt detected: ${reading.tiltAngle.toFixed(1)}° (threshold: ${thresholds.tiltThresholdDegrees}°)`,
+        }).returning()
+
+        if (defect.length > 0) {
+          await createAlert(defect[0], device, `Structural damage at Pole #${device.poleId}: Tilt ${reading.tiltAngle.toFixed(1)}°`)
+          updatePoleStatus(device.poleId, pole, 'high')
+        }
+      }
+
+      // Check for vibration anomaly
+      if (reading.vibration && thresholds.vibrationThreshold && reading.vibration > thresholds.vibrationThreshold) {
+        anomalyDetected = true
+        anomalyType = 'excessive_vibration'
+
+        const defect = await db.insert(defects).values({
+          deviceId: device.id,
+          poleId: device.poleId,
+          anomalyType: 'excessive_vibration',
+          severity: reading.vibration > thresholds.vibrationThreshold * 2 ? 'high' : 'medium',
+          description: `Vibration: ${reading.vibration.toFixed(2)} (threshold: ${thresholds.vibrationThreshold})`,
+        }).returning()
+
+        if (defect.length > 0) {
+          await createAlert(defect[0], device, `Excessive vibration at Pole #${device.poleId}`)
+        }
+      }
+
+      // Check for voltage/power issues
+      if (reading.voltage && thresholds.voltageOutageThreshold && reading.voltage < thresholds.voltageOutageThreshold) {
+        anomalyDetected = true
+        anomalyType = 'voltage_outage'
+
+        const defect = await db.insert(defects).values({
+          deviceId: device.id,
+          poleId: device.poleId,
+          anomalyType: 'voltage_outage',
+          severity: reading.voltage < 10 ? 'high' : 'medium',
+          description: `Voltage low: ${reading.voltage.toFixed(1)}V (threshold: ${thresholds.voltageOutageThreshold}V)`,
+        }).returning()
+
+        if (defect.length > 0) {
+          await createAlert(defect[0], device, `Power issue at Pole #${device.poleId}`)
+          updatePoleStatus(device.poleId, pole, 'warning')
         }
       }
 
@@ -154,17 +194,25 @@ export async function processSensorData(
       }
     }
 
-    // Update device's last reading timestamp
+    // Update device status
+    const isOnline = reading.signalStrength !== undefined && reading.signalStrength > -100
     await db.update(devices).set({
       lastReadingAt: new Date(),
+      isOnline,
+      lastOnlineAt: isOnline ? new Date() : device.lastOnlineAt,
+      batteryLevel: reading.batteryVoltage ? Math.min(100, Math.max(0, reading.batteryVoltage / 3.3 * 100)) : device.batteryLevel,
+      signalStrength: reading.signalStrength || device.signalStrength,
     }).where(eq(devices.id, device.id))
 
     // Broadcast reading update
     broadcastCurrentReading({
       deviceId: device.id,
       poleId: device.poleId,
-      currentValue,
-      timestamp: new Date(),
+      currentValue: reading.currentValue,
+      temperature: reading.temperature,
+      tiltAngle: reading.tiltAngle,
+      vibration: reading.vibration,
+      timestamp: reading.timestamp || new Date(),
       anomalyDetected,
       anomalyType: anomalyType || undefined,
     })
@@ -173,16 +221,47 @@ export async function processSensorData(
     broadcastDeviceStatus({
       deviceId: device.id,
       poleId: device.poleId,
-      signalStrength: device.signalStrength,
-      batteryLevel: device.batteryLevel,
+      signalStrength: reading.signalStrength || device.signalStrength,
+      batteryLevel: reading.batteryVoltage ? Math.min(100, Math.max(0, reading.batteryVoltage / 3.3 * 100)) : device.batteryLevel,
       lastReadingAt: new Date(),
-      status: anomalyDetected ? 'warning' : 'connected',
+      isOnline,
+      status: anomalyDetected ? 'warning' : isOnline ? 'connected' : 'offline',
     })
 
-    return reading[0]
+    return storedReading[0]
   } catch (error) {
     console.error('[v0] Error processing sensor data:', error)
     throw error
+  }
+}
+
+// Helper to create alert and broadcast
+async function createAlert(defect: any, device: any, message: string) {
+  await db.insert(alerts).values({
+    defectId: defect.id,
+    severity: defect.severity as 'low' | 'medium' | 'high',
+  })
+
+  broadcastAlert({
+    id: defect.id,
+    severity: defect.severity as 'low' | 'medium' | 'high',
+    poleId: device.poleId,
+    deviceId: device.id,
+    message,
+    timestamp: new Date(),
+  })
+}
+
+// Helper to update pole status
+async function updatePoleStatus(poleId: number, pole: any, newStatus: string) {
+  if (pole) {
+    await db.update(poles).set({ status: newStatus }).where(eq(poles.id, poleId))
+    broadcastPoleStatusChange({
+      poleId,
+      newStatus,
+      oldStatus: pole.status,
+      timestamp: new Date(),
+    })
   }
 }
 
