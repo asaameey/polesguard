@@ -24,24 +24,19 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
     setError(null)
     setLoading(true)
 
-    try {
-      const { error } = isSignUp
-        ? await authClient.signUp.email({ email, password, name })
-        : await authClient.signIn.email({ email, password })
+    const { error } = isSignUp
+      ? await authClient.signUp.email({ email, password, name })
+      : await authClient.signIn.email({ email, password })
 
-      if (error) {
-        setError(error.message ?? 'Something went wrong')
-        setLoading(false)
-        return
-      }
+    setLoading(false)
 
-      router.push('/')
-      router.refresh()
-    } catch (err) {
-      console.error('[v0] Auth error:', err)
-      setError('An error occurred. Please try again.')
-      setLoading(false)
+    if (error) {
+      setError(error.message ?? 'Something went wrong')
+      return
     }
+
+    router.push('/')
+    router.refresh()
   }
 
   return (

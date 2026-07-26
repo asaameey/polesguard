@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean, serial, integer, doublePrecision } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, boolean, serial, integer, real } from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
 
 // --- Better Auth required tables -------------------------------------------
 // Column names are camelCase to match Better Auth's defaults. Do not rename.
@@ -78,93 +79,73 @@ export const verification = pgTable('verification', {
 //     .notNull()
 //     .references(() => user.id, { onDelete: "cascade" }),
 
-// --- Pole Defect Detector App Tables ---
+// --- IoT Pole Monitoring System Tables ---
 
 export const poles = pgTable('poles', {
   id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  location: text('location').notNull(),
-  latitude: doublePrecision('latitude'),
-  longitude: doublePrecision('longitude'),
-  status: text('status').notNull().default('normal'),
+  userId: text('userId').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  poleId: text('poleId').notNull().unique(),
+  latitude: real('latitude').notNull(),
+  longitude: real('longitude').notNull(),
+  location: text('location'),
+  voltage: real('voltage'),
+  currentA: real('currentA'),
+  temperature: real('temperature'),
+  tiltAngle: real('tiltAngle'),
+  vibration: real('vibration'),
+  status: text('status').notNull().default('normal'), // 'normal', 'offline', 'alert'
+  lastSeen: timestamp('lastSeen'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
 
-export const devices = pgTable('devices', {
+export const sensorReadings = pgTable('sensor_readings', {
   id: serial('id').primaryKey(),
-  poleId: integer('poleId').notNull(),
-  deviceId: text('deviceId').notNull().unique(),
-  deviceName: text('deviceName').notNull(),
-  currentType: text('currentType').notNull(),
-  sensitivity: doublePrecision('sensitivity'),
-  batteryLevel: integer('batteryLevel'),
-  lastReadingAt: timestamp('lastReadingAt'),
-  signalStrength: integer('signalStrength'),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-})
-
-export const sensorThresholds = pgTable('sensor_thresholds', {
-  id: serial('id').primaryKey(),
-  deviceId: integer('deviceId').notNull(),
-  currentType: text('currentType').notNull(),
-  highCurrentThreshold: doublePrecision('highCurrentThreshold').notNull(),
-  lowCurrentThreshold: doublePrecision('lowCurrentThreshold').notNull(),
-  normalBaseline: doublePrecision('normalBaseline'),
-  anomalyDurationMinutes: integer('anomalyDurationMinutes').default(5),
-  rapidFluctuationPercent: doublePrecision('rapidFluctuationPercent').default(15),
-  enabled: boolean('enabled').default(true),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-})
-
-export const currentReadings = pgTable('current_readings', {
-  id: serial('id').primaryKey(),
-  deviceId: integer('deviceId').notNull(),
-  currentValue: doublePrecision('currentValue').notNull(),
-  voltage: doublePrecision('voltage'),
+  poleId: integer('poleId').notNull().references(() => poles.id, { onDelete: 'cascade' }),
+  userId: text('userId').notNull(),
+  current_A: real('current_A'),
+  voltage_V: real('voltage_V'),
+  temperature_C: real('temperature_C'),
+  tilt_degrees: real('tilt_degrees'),
+  vibration_level: real('vibration_level'),
   timestamp: timestamp('timestamp').notNull().defaultNow(),
-  anomalyDetected: boolean('anomalyDetected').default(false),
-  anomalyType: text('anomalyType'),
-})
-
-export const defects = pgTable('defects', {
-  id: serial('id').primaryKey(),
-  deviceId: integer('deviceId').notNull(),
-  poleId: integer('poleId').notNull(),
-  anomalyType: text('anomalyType').notNull(),
-  severity: text('severity').notNull(),
-  currentValue: doublePrecision('currentValue'),
-  detectedAt: timestamp('detectedAt').notNull().defaultNow(),
-  resolvedAt: timestamp('resolvedAt'),
-  description: text('description'),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
 
 export const alerts = pgTable('alerts', {
   id: serial('id').primaryKey(),
-  defectId: integer('defectId').notNull(),
-  severity: text('severity').notNull(),
-  status: text('status').notNull().default('pending'),
-  acknowledgedBy: text('acknowledgedBy'),
-  acknowledgedAt: timestamp('acknowledgedAt'),
-  emailSent: boolean('emailSent').default(false),
-  smsSent: boolean('smsSent').default(false),
-  escalatedAt: timestamp('escalatedAt'),
+  poleId: integer('poleId').notNull().references(() => poles.id, { onDelete: 'cascade' }),
+  userId: text('userId').notNull(),
+  alertType: text('alertType').notNull(), // 'overcurrent', 'voltage', 'temperature', 'tilt', 'vibration', 'offline'
+  severity: text('severity').notNull(), // 'low', 'medium', 'high', 'critical'
+  message: text('message'),
+  value: real('value'),
+  threshold: real('threshold'),
+  status: text('status').notNull().default('active'), // 'active', 'resolved'
+  resolvedAt: timestamp('resolvedAt'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
 
-export const operatorSettings = pgTable('operator_settings', {
+export const maintenanceRecords = pgTable('maintenance_records', {
   id: serial('id').primaryKey(),
-  userId: text('userId').notNull().unique(),
-  emailNotifications: boolean('emailNotifications').default(true),
-  smsNotifications: boolean('smsNotifications').default(true),
-  inAppNotifications: boolean('inAppNotifications').default(true),
-  minSeverityLevel: text('minSeverityLevel').default('low'),
-  phoneNumber: text('phoneNumber'),
+  poleId: integer('poleId').notNull().references(() => poles.id, { onDelete: 'cascade' }),
+  userId: text('userId').notNull(),
+  maintenanceType: text('maintenanceType').notNull(), // 'inspection', 'repair', 'replacement', 'cleaning'
+  description: text('description'),
+  scheduledDate: timestamp('scheduledDate'),
+  completedDate: timestamp('completedDate'),
+  status: text('status').notNull().default('scheduled'), // 'scheduled', 'in_progress', 'completed'
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
+
+export const awsIotDevices = pgTable('aws_iot_devices', {
+  id: serial('id').primaryKey(),
+  poleId: integer('poleId').notNull().references(() => poles.id, { onDelete: 'cascade' }),
+  userId: text('userId').notNull(),
+  deviceName: text('deviceName').notNull().unique(),
+  certificateArn: text('certificateArn'),
+  publicKey: text('publicKey'),
+  privateKey: text('privateKey'),
+  status: text('status').notNull().default('active'), // 'active', 'inactive', 'revoked'
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })

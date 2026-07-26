@@ -1,7 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import { ErrorHandlerClient } from '@/components/error-handler-client'
 
 export const metadata: Metadata = {
   title: 'v0 App',
@@ -42,7 +41,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <ErrorHandlerClient />
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

@@ -9,28 +9,22 @@ export const auth = betterAuth({
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
-        : process.env.V0_RUNTIME_URL ?? 'http://localhost:3000'),
+        : process.env.V0_RUNTIME_URL),
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
   },
   trustedOrigins: [
-    // Development origins
-    ...(process.env.NODE_ENV === 'development'
-      ? ['http://localhost:3000', 'http://localhost:3001']
-      : []),
-    // V0 runtime URL
     ...(process.env.V0_RUNTIME_URL ? [process.env.V0_RUNTIME_URL] : []),
-    // Vercel preview deployments
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
-    // Vercel production domain
     ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
       : []),
-    // Custom domain with fallback
-    ...(process.env.CUSTOM_DOMAIN
-      ? [`https://${process.env.CUSTOM_DOMAIN}`, `https://www.${process.env.CUSTOM_DOMAIN}`]
-      : ['https://polesguard.com', 'https://www.polesguard.com']),
+    // Development origins
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
   ],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
