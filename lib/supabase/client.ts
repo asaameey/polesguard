@@ -5,9 +5,7 @@ export function createClient() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!url || !key) {
-    throw new Error(
-      'Supabase URL and Anon Key are required. Please configure your Supabase integration in v0 settings.',
-    )
+    return null
   }
 
   return createBrowserClient(url, key)
